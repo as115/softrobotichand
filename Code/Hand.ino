@@ -1,5 +1,4 @@
 //Declare Variables
-//I don't know if theres a way to make this look nicer, each motor needs its own variables so theres a lot
 //Pin Numbers
 const int MotorPos_0 = 12;
 int MotorNeg_0 = 11;
@@ -16,14 +15,30 @@ const int FLEX_PIN_1 = A2;
 const int FLEX_PIN_2 = A3;
 const int FLEX_PIN_3 = A4;
 const int FLEX_PIN_4 = A6;
-const int interval = 2000;
 
+
+int interval0 = 0;
+int interval1 = 0;
+int interval2 = 0;
+int interval3 = 0;
+int interval4 = 0;
+
+
+//Do research to find values for these
+const int p0 = 0;
+const int p1;
+const int p2;
+const int p3;
+const int p4;
+
+const int tolerance = 0;
 //State Variables
-boolean actuated_0 = false;
-boolean actuated_1 = false;
-boolean actuated_2 = false;
-boolean actuated_3 = false;
-boolean actuated_4 = false;
+int curr_position0 = 0;
+int curr_position1 = 0;
+int curr_position2 = 0;
+int curr_position3 = 0;
+int curr_position4 = 0;
+
 
 //Calibration variables (will change once Calibrate() is run, had to initialize to 0 for code to run
 int cal_0 = 0;
@@ -95,335 +110,401 @@ void setup() {
 void loop() {
   delay(500);
   curr = millis();
-  
   //uncomment next line to make sure all motors are working properly
-//    TestMotors();
-  
+  //    TestMotors();
   ShowCalibratedVals();
-//    ShowVals();
-  
-  //Start all relevant motors
-  StartMotors();
-  
-  //turn off all motors based on interval set earlier
-  StopMotors();
-  //  AdjustCal();
+  //    ShowVals();
+  RunMotors();
 }
 
-//-1: negative, 0: no actuation, 1: positive
-//Determines how the inputted motor should actuate
-//First calculates difference between current voltage reading and base voltage from Calibrate()
-//Switch statement based on which motor you input. All 5 motors get called in StartMotors but made it a separate function for readability
-//If the difference between measured and base voltage is greater than 20 and the finger is not already actuated then it returns 1, signaling actuation
-//If the difference is less than 15 but the finger is actuated it will return to its original position
-//This allows the finger to remain actuated if the flex snesor stays flexed when this method is called
-int FindActuate(int MotorNum) {
-  int flexVal;
-  bool actuated;
-  switch (MotorNum) {
-
-    //First initialize variables for use within the method
-    case 0:
-      flexVal = analogRead(FLEX_PIN_0) - cal_0;
-      actuated = actuated_0;
-      break;
-    case 1:
-      flexVal = analogRead(FLEX_PIN_1) - cal_1;
-      actuated = actuated_1;
-      break;
-    case 2:
-      flexVal = analogRead(FLEX_PIN_2) - cal_2;
-      actuated = actuated_2;
-      break;
-    case 3:
-      flexVal = analogRead(FLEX_PIN_3) - cal_3;
-      actuated = actuated_3;
-      break;
-    case 4:
-      flexVal = analogRead(FLEX_PIN_4) - cal_4;
-      actuated = actuated_4;
-      break;
-  }
-
-  //Determine updated state of inputted motor
-  //these reference numbers may not be accurate for other sensors/circuits, change as needed
-  //This is for 5V input directly from arduino
-
-  //New idea: Have 3 or 4 different possible positions, find values that correspond to these and change the possible outputs to match these values
-  if (flexVal > 20 && !actuated) {
-    return 1;
-  }
-  if (flexVal <= 15 && actuated) {
-    return -1;
-  }
-  return 0;
-}
-
-
-//Determines which direction each motor should be run using FindActuate(), then starts motor accordingly.
-//Updates actuated_# state variable
-//If FindActuate returns 0 there is no response
-void StartMotors() {
-  switch (FindActuate(0)) {
-    case 1:
-      Serial.println("Positive 0");
-      sp0 = HIGH;
-      tp0 = curr;
-      digitalWrite(MotorPos_0, HIGH);
-      actuated_0 = true;
-      break;
-    case -1:
-      Serial.println("Negative 0");
-      sn0 = HIGH;
-      tn0 = curr;
-      digitalWrite(MotorNeg_0, HIGH);
-      actuated_0 = false;
-      break;
-  }
-  switch (FindActuate(1)) {
-    case 1:
-      Serial.println("Positive 1");
-      sp1 = HIGH;
-      tp1 = curr;
-      digitalWrite(MotorPos_1, HIGH);
-      actuated_1 = true;
-      break;
-    case -1:
-      Serial.println("Negative 1");
-      sn1 = HIGH;
-      tn1 = curr;
-      digitalWrite(MotorNeg_1, HIGH);
-      actuated_1 = false;
-      break;
-  }
-  switch (FindActuate(2)) {
-    case 1:
-      Serial.println("Positive 2");
-      sp2 = HIGH;
-      tp2 = curr;
-      digitalWrite(MotorPos_2, HIGH);
-      actuated_2 = true;
-      break;
-    case -1:
-      Serial.println("Negative 2");
-      sn2 = HIGH;
-      tn2 = curr;
-      digitalWrite(MotorNeg_2, HIGH);
-      actuated_2 = false;
-      break;
-  }
-  switch (FindActuate(3)) {
-    case 1:
-      Serial.println("Positive 3");
-      sp3 = HIGH;
-      tp3 = curr;
-      digitalWrite(MotorPos_3, HIGH);
-      actuated_3 = true;
-      break;
-    case -1:
-      Serial.println("Negative 3");
-      sn3 = HIGH;
-      tn3 = curr;
-      digitalWrite(MotorNeg_3, HIGH);
-      actuated_3 = false;
-      break;
-  }
-  switch (FindActuate(4)) {
-    case 1:
-      Serial.println("Positive 4");
-      sp4 = HIGH;
-      tp4 = curr;
-      digitalWrite(MotorPos_4, HIGH);
-      actuated_4 = true;
-      break;
-    case -1:
-      Serial.println("Negative 4");
-      sn4 = HIGH;
-      tn4 = curr;
-      digitalWrite(MotorNeg_4, HIGH);
-      actuated_4 = false;
-      break;
-  }
-}
-
-//Times how long motor has been running for, if it matches interval it will turn it off
-void StopMotors() {
-  if (sp0 == HIGH) {
-    if (curr - tp0 >= interval || (abs(analogRead(FLEX_PIN_0) - cal_0) <= 4)) {
-      sp0 = LOW;
-      digitalWrite(MotorPos_0, LOW);
-    }
-  }
-
-  if (sn0 == HIGH) {
-    if (curr - tn0 >= interval || (abs(analogRead(FLEX_PIN_0) - cal_0) <= 4)) {
-      sn0 = LOW;
-      digitalWrite(MotorNeg_0, LOW);
-    }
-  }
-
-  if (sp1 == HIGH) {
-    if (curr - tp1 >= interval|| (abs(analogRead(FLEX_PIN_1) - cal_1) <= 4)) {
-      sp1 = LOW;
-      digitalWrite(MotorPos_1, LOW);
-    }
-  }
-
-  if (sn1 == HIGH) {
-    if (curr - tn1 >= interval|| (abs(analogRead(FLEX_PIN_0) - cal_0) <= 4)) {
-      sn1 = LOW;
-      digitalWrite(MotorNeg_1, LOW);
-    }
-  }
-
-  if (sp2 == HIGH) {
-    if (curr - tp2 >= interval) {
-      sp2 = LOW;
-      digitalWrite(MotorPos_2, LOW);
-    }
-  }
-
-  if (sn2 == HIGH) {
-    if (curr - tn2 >= interval) {
-      sn2 = LOW;
-      digitalWrite(MotorNeg_2, LOW);
-    }
-  }
-
-  if (sp3 == HIGH) {
-    if (curr - tp3 >= interval) {
-      sp3 = LOW;
-      digitalWrite(MotorPos_3, LOW);
-    }
-  }
-
-  if (sn3 == HIGH) {
-    if (curr - tn3 >= interval) {
-      sn3 = LOW;
-      digitalWrite(MotorNeg_3, LOW);
-    }
-  }
-
-    if (sp4 == HIGH) {
-      if (curr - tp4 >= interval) {
-        sp4 = LOW;
-        digitalWrite(MotorPos_4, LOW);
-      }
-    }
-
-    if (sn4 == HIGH) {
-      if (curr - tn4 >= interval) {
-        sn4 = LOW;
-        digitalWrite(MotorNeg_4, LOW);
-      }
-    }
-  }
-
-  //take average value of input over 2 seconds
-  //Update 2/28/2023: originally it calibrated each motor at once for one second, but changed it so it calibrates them all at the same time for 2 seconds
-  int Calibrate() {
-    double avg0 = 0;
-    double avg1 = 0;
-    double avg2 = 0;
-    double avg3 = 0;
-    double avg4 = 0;
-    int count = 0;
-    Serial.println("Calibrating");
-    while (millis() < 2000) {
-      avg0 += analogRead(FLEX_PIN_0);
-      avg1 += analogRead(FLEX_PIN_1);
-      avg2 += analogRead(FLEX_PIN_2);
-      avg3 += analogRead(FLEX_PIN_3);
-      avg4 += analogRead(FLEX_PIN_4);
-      count++;
-    }
-    cal_0 = avg0 / count;
-    cal_1 = avg1 / count;
-    cal_2 = avg2 / count;
-    cal_3 = avg3 / count;
-    cal_4 = avg4 / count;
-    Serial.println("Calibration Complete");
-  }
-
-  //prints voltage values
-  void ShowVals() {
-    int v0 = analogRead(FLEX_PIN_0);
-    int v1 = analogRead(FLEX_PIN_1);
-    int v2 = analogRead(FLEX_PIN_2);
-    int v3 = analogRead(FLEX_PIN_3);
-    int v4 = analogRead(FLEX_PIN_4);
-    Serial.print("0: ");
-    Serial.println(v0);
-    Serial.print("1: ");
-    Serial.println(v1);
-    Serial.print("2: ");
-    Serial.println(v2);
-    Serial.print("3: ");
-    Serial.println(v3);
-    Serial.print("4: ");
-    Serial.println(v4);
-    Serial.println();
-  }
-
-  //Activates each motor independently to test whether things are connected properly
-  void TestMotors() {
-    Serial.println("Starting 0");
-    digitalWrite(MotorPos_0, HIGH);
-    delay(1000);
-    digitalWrite(MotorPos_0, LOW);
-    digitalWrite(MotorNeg_0, HIGH);
-    delay(1000);
+//Finds change in reading from base value. Determines which position the change should correspond to.
+//Each position is at a 500 ms interval, so the time to reach each position is 500 times the change in position\
+//It then activates the motor for the calculated amount of time to reach that position
+//If the motor is still running after the set amount of time from when the motor was activated, it will turn off the motor and update the current position
+void ControlMotor0 {
+  //If there are motors currently running and they need to be stopped, stop them and end the method.
+  if (sn0 == HIGH && (curr - tn0 >= interval0)) {
+    sn0 = LOW;
     digitalWrite(MotorNeg_0, LOW);
-    delay(3000);
-    Serial.println("Starting 1");
-    digitalWrite(MotorPos_1, HIGH);
-    delay(1000);
-    digitalWrite(MotorPos_1, LOW);
-    digitalWrite(MotorNeg_1, HIGH);
-    delay(1000);
-    digitalWrite(MotorNeg_1, LOW);
-    delay(3000);
-    Serial.println("Starting 2");
-    digitalWrite(MotorPos_2, HIGH);
-    delay(1000);
-    digitalWrite(MotorPos_2, LOW);
-    digitalWrite(MotorNeg_2, HIGH);
-    delay(1000);
-    digitalWrite(MotorNeg_2, LOW);
-    delay(3000);
-    Serial.println("Starting 3");
-    digitalWrite(MotorPos_3, HIGH);
-    delay(1000);
-    digitalWrite(MotorPos_3, LOW);
-    digitalWrite(MotorNeg_3, HIGH);
-    delay(1000);
-    digitalWrite(MotorNeg_3, LOW);
-    delay(3000);
-    Serial.println("Starting 4");
-    digitalWrite(MotorPos_4, HIGH);
-    delay(1000);
-    digitalWrite(MotorPos_4, LOW);
-    digitalWrite(MotorNeg_4, HIGH);
-    delay(1000);
-    digitalWrite(MotorNeg_4, LOW);
+    curr_position_0 = curr_position_0 - interval0 / 500;
+    return;
   }
+  if (sp0 == HIGH && (curr - tp0 >= interval0)) {
+    sn0 = LOW;
+    digitalWrite(MotorPos_0, LOW);
+    curr_position_0 = curr_position_0 + interval0 / 500;
+    return;
+  }
+  //Difference in current analog read to calibrated value
+  flexVal = analogRead(FLEX_PIN_0) - cal_0;
+  //Find which position to go to. Start by initializing variable to -1 to check whether a position has been found, break the loop once there's a new position.
+  int go_to = -1;
+  while (go_to == -1) {
+    //If value is within a certain tolerance of the reading required to actuate to that voltage then it will adjust go_to to that position
+    if (abs(flexVal - p0) <= tolerance) {
+      go_to = 0;
+      break;
+    }
+    if (abs(flexVal - p1) <= tolerance) {
+      go_to = 1;
+      break;
+    }
+    if (abs(flexVal - p2) <= tolerance) {
+      go_to = 2;
+      break;
+    }
+    if (abs(flexVal - p3) <= tolerance) {
+      go_to = 3;
+      break;
+    }
+    if (abs(flexVal - p4) <= tolerance) {
+      go_to = 4;
+      break;
+    }
+  }
+  //Find change in position to determine how long motor needs to be run for
+  pos_change = go_to - curr_position_0;
+  //Negative position change
+  if (pos_change < 0) {
+    //Update time at which Negative Motor began running
+    tn0 = curr;
+    //Calculate interval. 500 times position change because each position is at a 500 ms interval
+    //i.e. if position change of 2, it would take 1000 ms to reach new position
+    interval0 = abs(pos_change * 500);
+    //Record current state of motor and start
+    sn0 = HIGH;
+    digitalWrite(MotorNeg_0, HIGH);
+  }
+  if (pos_change > 0) {
+    //Same as above but if change is positive
+    tp0 = curr;
+    interval0 = pos_change * 500;
+    sp0 = HIGH;
+    digitalWrite(MotorPos_0, HIGH);
+  }
+}
 
-  //Prints values - calibration to see change in voltage from base val
-  void ShowCalibratedVals() {
-    int v0 = analogRead(FLEX_PIN_0) - cal_0;
-    int v1 = analogRead(FLEX_PIN_1) - cal_1;
-    int v2 = analogRead(FLEX_PIN_2) - cal_2;
-    int v3 = analogRead(FLEX_PIN_3) - cal_3;
-    int v4 = analogRead(FLEX_PIN_4) - cal_4;
-    Serial.print("0: ");
-    Serial.println(v0);
-    Serial.print("1: ");
-    Serial.println(v1);
-    Serial.print("2: ");
-    Serial.println(v2);
-    Serial.print("3: ");
-    Serial.println(v3);
-    Serial.print("4: ");
-    Serial.println(v4);
-    Serial.println();
+//Same as above but for motor 1
+void ControlMotor1 {
+  if (sn1 == HIGH && (curr - tn1 >= interval1)) {
+    sn1 = LOW;
+    digitalWrite(MotorNeg_0, LOW);
+    curr_position_1 = curr_position_1 - interval1 / 500;
+    return;
   }
+  if (sp1 == HIGH && (curr - tp0 >= interval1)) {
+    sn1 = LOW;
+    digitalWrite(MotorPos_1, LOW);
+    curr_position_1 = curr_position_1 + interval1 / 500;
+    return;
+  }
+  flexVal = analogRead(FLEX_PIN_1) - cal_1;
+  int go_to = -1;
+  while (go_to == -1) {
+    if (abs(flexVal - p0) <= tolerance) {
+      go_to = 0;
+      break;
+    }
+    if (abs(flexVal - p1) <= tolerance) {
+      go_to = 1;
+      break;
+    }
+    if (abs(flexVal - p2) <= tolerance) {
+      go_to = 2;
+      break;
+    }
+    if (abs(flexVal - p3) <= tolerance) {
+      go_to = 3;
+      break;
+    }
+    if (abs(flexVal - p4) <= tolerance) {
+      go_to = 4;
+      break;
+    }
+  }
+  pos_change = go_to - curr_position_0;
+  if (pos_change < 0) {
+    tn1 = curr;
+    interval1 = abs(pos_change * 500);
+    sn1 = HIGH;
+    digitalWrite(MotorNeg_1, HIGH);
+  }
+  if (pos_change > 0) {
+    tp1 = curr;
+    interval1 = pos_change * 500;
+    sp1 = HIGH;
+    digitalWrite(MotorPos_1, HIGH);
+  }
+}
+
+void ControlMotor2 {
+  if (sn2 == HIGH && (curr - tn2 >= interval2)) {
+    sn2 = LOW;
+    digitalWrite(MotorNeg_2, LOW);
+    curr_position_2 = curr_position_2 - interval2 / 500;
+    return;
+  }
+  if (sp2 == HIGH && (curr - tp2 >= interval2)) {
+    sn2 = LOW;
+    digitalWrite(MotorPos_2, LOW);
+    curr_position_2 = curr_position_2 + interval2 / 500;
+    return;
+  }
+  flexVal = analogRead(FLEX_PIN_2) - cal_2;
+  int go_to = -1;
+  while (go_to == -1) {
+    if (abs(flexVal - p0) <= tolerance) {
+      go_to = 0;
+      break;
+    }
+    if (abs(flexVal - p1) <= tolerance) {
+      go_to = 1;
+      break;
+    }
+    if (abs(flexVal - p2) <= tolerance) {
+      go_to = 2;
+      break;
+    }
+    if (abs(flexVal - p3) <= tolerance) {
+      go_to = 3;
+      break;
+    }
+    if (abs(flexVal - p4) <= tolerance) {
+      go_to = 4;
+      break;
+    }
+  }
+  pos_change = go_to - curr_position_0;
+  if (pos_change < 0) {
+    tn2 = curr;
+    interval2 = abs(pos_change * 500);
+    sn2 = HIGH;
+    digitalWrite(MotorNeg_2, HIGH);
+  }
+  if (pos_change > 0) {
+    tp2 = curr;
+    interval0 = pos_change * 500;
+    sp2 = HIGH;
+    digitalWrite(MotorPos_2, HIGH);
+  }
+}
+
+void ControlMotor3 {
+  if (sn3 == HIGH && (curr - tn3 >= interval3)) {
+    sn3 = LOW;
+    digitalWrite(MotorNeg_3, LOW);
+    curr_position_3 = curr_position_3 - interval3 / 500;
+    return;
+  }
+  if (sp3 == HIGH && (curr - tp3 >= interval3)) {
+    sn3 = LOW;
+    digitalWrite(MotorPos_3, LOW);
+    curr_position_3 = curr_position_3 + interval3 / 500;
+    return;
+  }
+  flexVal = analogRead(FLEX_PIN_3) - cal_3;
+  int go_to = -1;
+  while (go_to == -1) {
+    if (abs(flexVal - p0) <= tolerance) {
+      go_to = 0;
+      break;
+    }
+    if (abs(flexVal - p1) <= tolerance) {
+      go_to = 1;
+      break;
+    }
+    if (abs(flexVal - p2) <= tolerance) {
+      go_to = 2;
+      break;
+    }
+    if (abs(flexVal - p3) <= tolerance) {
+      go_to = 3;
+      break;
+    }
+    if (abs(flexVal - p4) <= tolerance) {
+      go_to = 4;
+      break;
+    }
+  }
+  pos_change = go_to - curr_position_3;
+  if (pos_change < 0) {
+    tn3 = curr;
+    interval3 = abs(pos_change * 500);
+    sn3 = HIGH;
+    digitalWrite(MotorNeg_3, HIGH);
+  }
+  if (pos_change > 0) {
+    tp3 = curr;
+    interval3 = pos_change * 500;
+    sp3 = HIGH;
+    digitalWrite(MotorPos_3, HIGH);
+  }
+}
+
+void ControlMotor4 {
+  if (sn4 == HIGH && (curr - tn4 >= interval4)) {
+    sn4 = LOW;
+    digitalWrite(MotorNeg_4, LOW);
+    curr_position_4 = curr_position_4 - interval4 / 500;
+    return;
+  }
+  if (sp4 == HIGH && (curr - tp4 >= interval4) {
+  sn4 = LOW;
+  digitalWrite(MotorPos_4, LOW);
+    curr_position_4 = curr_position_4 + interval4 / 500;
+    return;
+  }
+  flexVal = analogRead(FLEX_PIN_0) - cal_0;
+  int go_to = -1;
+  while (go_to == -1) {
+  if (abs(flexVal - p0) <= tolerance) {
+      go_to = 0;
+      break;
+    }
+    if (abs(flexVal - p1) <= tolerance) {
+      go_to = 1;
+      break;
+    }
+    if (abs(flexVal - p2) <= tolerance) {
+      go_to = 2;
+      break;
+    }
+    if (abs(flexVal - p3) <= tolerance) {
+      go_to = 3;
+      break;
+    }
+    if (abs(flexVal - p4) <= tolerance) {
+      go_to = 4;
+      break;
+    }
+  }
+  pos_change = go_to - curr_position_4;
+  if (pos_change < 0) {
+  tn4 = curr;
+  interval4 = abs(pos_change * 500);
+    sn4 = HIGH;
+    digitalWrite(MotorNeg_4, HIGH);
+  }
+  if (pos_change > 0) {
+  tp4 = curr;
+  interval4 = pos_change * 500;
+  sp4 = HIGH;
+  digitalWrite(MotorPos_4, HIGH);
+  }
+}
+
+void RunMotors() {
+  ControlMotor0();
+  ControlMotor1();
+  ControlMotor2();
+  ControlMotor3();
+  ControlMotor4();
+}
+//take average value of input over 2 seconds
+//Update 2/28/2023: originally it calibrated each motor at once for one second, but changed it so it calibrates them all at the same time for 2 seconds
+int Calibrate() {
+  double avg0 = 0;
+  double avg1 = 0;
+  double avg2 = 0;
+  double avg3 = 0;
+  double avg4 = 0;
+  int count = 0;
+  Serial.println("Calibrating");
+  while (millis() < 2000) {
+    avg0 += analogRead(FLEX_PIN_0);
+    avg1 += analogRead(FLEX_PIN_1);
+    avg2 += analogRead(FLEX_PIN_2);
+    avg3 += analogRead(FLEX_PIN_3);
+    avg4 += analogRead(FLEX_PIN_4);
+    count++;
+  }
+  cal_0 = avg0 / count;
+  cal_1 = avg1 / count;
+  cal_2 = avg2 / count;
+  cal_3 = avg3 / count;
+  cal_4 = avg4 / count;
+  Serial.println("Calibration Complete");
+}
+
+//prints voltage values
+void ShowVals() {
+  int v0 = analogRead(FLEX_PIN_0);
+  int v1 = analogRead(FLEX_PIN_1);
+  int v2 = analogRead(FLEX_PIN_2);
+  int v3 = analogRead(FLEX_PIN_3);
+  int v4 = analogRead(FLEX_PIN_4);
+  Serial.print("0: ");
+  Serial.println(v0);
+  Serial.print("1: ");
+  Serial.println(v1);
+  Serial.print("2: ");
+  Serial.println(v2);
+  Serial.print("3: ");
+  Serial.println(v3);
+  Serial.print("4: ");
+  Serial.println(v4);
+  Serial.println();
+}
+
+//Activates each motor independently to test whether things are connected properly
+void TestMotors() {
+  Serial.println("Starting 0");
+  digitalWrite(MotorPos_0, HIGH);
+  delay(1000);
+  digitalWrite(MotorPos_0, LOW);
+  digitalWrite(MotorNeg_0, HIGH);
+  delay(1000);
+  digitalWrite(MotorNeg_0, LOW);
+  delay(3000);
+  Serial.println("Starting 1");
+  digitalWrite(MotorPos_1, HIGH);
+  delay(1000);
+  digitalWrite(MotorPos_1, LOW);
+  digitalWrite(MotorNeg_1, HIGH);
+  delay(1000);
+  digitalWrite(MotorNeg_1, LOW);
+  delay(3000);
+  Serial.println("Starting 2");
+  digitalWrite(MotorPos_2, HIGH);
+  delay(1000);
+  digitalWrite(MotorPos_2, LOW);
+  digitalWrite(MotorNeg_2, HIGH);
+  delay(1000);
+  digitalWrite(MotorNeg_2, LOW);
+  delay(3000);
+  Serial.println("Starting 3");
+  digitalWrite(MotorPos_3, HIGH);
+  delay(1000);
+  digitalWrite(MotorPos_3, LOW);
+  digitalWrite(MotorNeg_3, HIGH);
+  delay(1000);
+  digitalWrite(MotorNeg_3, LOW);
+  delay(3000);
+  Serial.println("Starting 4");
+  digitalWrite(MotorPos_4, HIGH);
+  delay(1000);
+  digitalWrite(MotorPos_4, LOW);
+  digitalWrite(MotorNeg_4, HIGH);
+  delay(1000);
+  digitalWrite(MotorNeg_4, LOW);
+}
+
+//Prints values - calibration to see change in voltage from base val
+void ShowCalibratedVals() {
+  int v0 = analogRead(FLEX_PIN_0) - cal_0;
+  int v1 = analogRead(FLEX_PIN_1) - cal_1;
+  int v2 = analogRead(FLEX_PIN_2) - cal_2;
+  int v3 = analogRead(FLEX_PIN_3) - cal_3;
+  int v4 = analogRead(FLEX_PIN_4) - cal_4;
+  Serial.print("0: ");
+  Serial.println(v0);
+  Serial.print("1: ");
+  Serial.println(v1);
+  Serial.print("2: ");
+  Serial.println(v2);
+  Serial.print("3: ");
+  Serial.println(v3);
+  Serial.print("4: ");
+  Serial.println(v4);
+  Serial.println();
+}
