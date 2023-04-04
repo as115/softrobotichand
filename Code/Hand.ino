@@ -26,18 +26,18 @@ int interval4 = 0;
 
 //Do research to find values for these
 const int p0 = 0;
-const int p1;
-const int p2;
-const int p3;
-const int p4;
+const int p1 = 75;
+const int p2 = 150;
+const int p3 = 225;
+const int p4 = 275;
 
 const int tolerance = 0;
 //State Variables
-int curr_position0 = 0;
-int curr_position1 = 0;
-int curr_position2 = 0;
-int curr_position3 = 0;
-int curr_position4 = 0;
+int curr_position_0 = 0;
+int curr_position_1 = 0;
+int curr_position_2 = 0;
+int curr_position_3 = 0;
+int curr_position_4 = 0;
 
 
 //Calibration variables (will change once Calibrate() is run, had to initialize to 0 for code to run
@@ -111,17 +111,17 @@ void loop() {
   delay(500);
   curr = millis();
   //uncomment next line to make sure all motors are working properly
-  //    TestMotors();
+      TestMotors();
   ShowCalibratedVals();
   //    ShowVals();
-  RunMotors();
+//  RunMotors();
 }
 
 //Finds change in reading from base value. Determines which position the change should correspond to.
 //Each position is at a 500 ms interval, so the time to reach each position is 500 times the change in position\
 //It then activates the motor for the calculated amount of time to reach that position
 //If the motor is still running after the set amount of time from when the motor was activated, it will turn off the motor and update the current position
-void ControlMotor0 {
+void ControlMotor0() {
   //If there are motors currently running and they need to be stopped, stop them and end the method.
   if (sn0 == HIGH && (curr - tn0 >= interval0)) {
     sn0 = LOW;
@@ -136,7 +136,7 @@ void ControlMotor0 {
     return;
   }
   //Difference in current analog read to calibrated value
-  flexVal = analogRead(FLEX_PIN_0) - cal_0;
+  int flexVal = analogRead(FLEX_PIN_0) - cal_0;
   //Find which position to go to. Start by initializing variable to -1 to check whether a position has been found, break the loop once there's a new position.
   int go_to = -1;
   while (go_to == -1) {
@@ -163,7 +163,7 @@ void ControlMotor0 {
     }
   }
   //Find change in position to determine how long motor needs to be run for
-  pos_change = go_to - curr_position_0;
+  int pos_change = go_to - curr_position_0;
   //Negative position change
   if (pos_change < 0) {
     //Update time at which Negative Motor began running
@@ -185,7 +185,7 @@ void ControlMotor0 {
 }
 
 //Same as above but for motor 1
-void ControlMotor1 {
+void ControlMotor1() {
   if (sn1 == HIGH && (curr - tn1 >= interval1)) {
     sn1 = LOW;
     digitalWrite(MotorNeg_0, LOW);
@@ -198,7 +198,7 @@ void ControlMotor1 {
     curr_position_1 = curr_position_1 + interval1 / 500;
     return;
   }
-  flexVal = analogRead(FLEX_PIN_1) - cal_1;
+  int flexVal = analogRead(FLEX_PIN_1) - cal_1;
   int go_to = -1;
   while (go_to == -1) {
     if (abs(flexVal - p0) <= tolerance) {
@@ -222,7 +222,7 @@ void ControlMotor1 {
       break;
     }
   }
-  pos_change = go_to - curr_position_0;
+  int pos_change = go_to - curr_position_0;
   if (pos_change < 0) {
     tn1 = curr;
     interval1 = abs(pos_change * 500);
@@ -237,7 +237,7 @@ void ControlMotor1 {
   }
 }
 
-void ControlMotor2 {
+void ControlMotor2() {
   if (sn2 == HIGH && (curr - tn2 >= interval2)) {
     sn2 = LOW;
     digitalWrite(MotorNeg_2, LOW);
@@ -250,7 +250,7 @@ void ControlMotor2 {
     curr_position_2 = curr_position_2 + interval2 / 500;
     return;
   }
-  flexVal = analogRead(FLEX_PIN_2) - cal_2;
+  int flexVal = analogRead(FLEX_PIN_2) - cal_2;
   int go_to = -1;
   while (go_to == -1) {
     if (abs(flexVal - p0) <= tolerance) {
@@ -274,7 +274,7 @@ void ControlMotor2 {
       break;
     }
   }
-  pos_change = go_to - curr_position_0;
+  int pos_change = go_to - curr_position_0;
   if (pos_change < 0) {
     tn2 = curr;
     interval2 = abs(pos_change * 500);
@@ -289,7 +289,7 @@ void ControlMotor2 {
   }
 }
 
-void ControlMotor3 {
+void ControlMotor3() {
   if (sn3 == HIGH && (curr - tn3 >= interval3)) {
     sn3 = LOW;
     digitalWrite(MotorNeg_3, LOW);
@@ -302,7 +302,7 @@ void ControlMotor3 {
     curr_position_3 = curr_position_3 + interval3 / 500;
     return;
   }
-  flexVal = analogRead(FLEX_PIN_3) - cal_3;
+  int flexVal = analogRead(FLEX_PIN_3) - cal_3;
   int go_to = -1;
   while (go_to == -1) {
     if (abs(flexVal - p0) <= tolerance) {
@@ -326,7 +326,7 @@ void ControlMotor3 {
       break;
     }
   }
-  pos_change = go_to - curr_position_3;
+  int pos_change = go_to - curr_position_3;
   if (pos_change < 0) {
     tn3 = curr;
     interval3 = abs(pos_change * 500);
@@ -341,20 +341,20 @@ void ControlMotor3 {
   }
 }
 
-void ControlMotor4 {
+void ControlMotor4() {
   if (sn4 == HIGH && (curr - tn4 >= interval4)) {
     sn4 = LOW;
     digitalWrite(MotorNeg_4, LOW);
     curr_position_4 = curr_position_4 - interval4 / 500;
     return;
   }
-  if (sp4 == HIGH && (curr - tp4 >= interval4) {
+  if (sp4 == HIGH && (curr - tp4 >= interval4)) {
   sn4 = LOW;
   digitalWrite(MotorPos_4, LOW);
     curr_position_4 = curr_position_4 + interval4 / 500;
     return;
   }
-  flexVal = analogRead(FLEX_PIN_0) - cal_0;
+  int flexVal = analogRead(FLEX_PIN_0) - cal_0;
   int go_to = -1;
   while (go_to == -1) {
   if (abs(flexVal - p0) <= tolerance) {
@@ -378,7 +378,7 @@ void ControlMotor4 {
       break;
     }
   }
-  pos_change = go_to - curr_position_4;
+  int pos_change = go_to - curr_position_4;
   if (pos_change < 0) {
   tn4 = curr;
   interval4 = abs(pos_change * 500);
