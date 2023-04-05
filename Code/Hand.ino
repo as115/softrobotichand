@@ -25,13 +25,13 @@ int interval4 = 0;
 
 
 //Do research to find values for these
-const int p0 = 0;
-const int p1 = 75;
-const int p2 = 150;
-const int p3 = 225;
-const int p4 = 275;
+const int p0 = 20;
+const int p1 = 64;
+const int p2 = 135;
+const int p3 = 175;
+const int p4 = 200;
+const int tolerance = 35;
 
-const int tolerance = 0;
 //State Variables
 int curr_position_0 = 0;
 int curr_position_1 = 0;
@@ -110,11 +110,16 @@ void setup() {
 void loop() {
   delay(500);
   curr = millis();
+  if (curr_position_0 < 0 || curr_position_0 > 4) {
+    Serial.println("Something has gone terribly wrong");
+    delay(100000000000000);
+  }
   //uncomment next line to make sure all motors are working properly
-      TestMotors();
+  //      TestMotors();
   ShowCalibratedVals();
-  //    ShowVals();
-//  RunMotors();
+//      ShowVals();
+  ControlMotor0();
+//    RunMotors();
 }
 
 //Finds change in reading from base value. Determines which position the change should correspond to.
@@ -123,20 +128,117 @@ void loop() {
 //If the motor is still running after the set amount of time from when the motor was activated, it will turn off the motor and update the current position
 void ControlMotor0() {
   //If there are motors currently running and they need to be stopped, stop them and end the method.
-  if (sn0 == HIGH && (curr - tn0 >= interval0)) {
-    sn0 = LOW;
-    digitalWrite(MotorNeg_0, LOW);
-    curr_position_0 = curr_position_0 - interval0 / 500;
-    return;
+  if (sn0 == HIGH) {
+    if (curr - tn0 >= interval0) {
+      sn0 = LOW;
+      digitalWrite(MotorNeg_0, LOW);
+      return;
+    } else {
+      //If a motor is running exit method
+      return;
+    }
   }
-  if (sp0 == HIGH && (curr - tp0 >= interval0)) {
-    sn0 = LOW;
-    digitalWrite(MotorPos_0, LOW);
-    curr_position_0 = curr_position_0 + interval0 / 500;
-    return;
+  if (sp0 == HIGH) {
+    if (curr - tp0 >= interval0) {
+      sp0 = LOW;
+      digitalWrite(MotorPos_0, LOW);
+      return;
+    } else {
+      //If a motor is running exit method
+      return;
+    }
   }
   //Difference in current analog read to calibrated value
   int flexVal = analogRead(FLEX_PIN_0) - cal_0;
+  Serial.print("flexVal: ");
+  Serial.println(flexVal);
+  //Find which position to go to. Start by initializing variable to -1 to check whether a position has been found, break the loop once there's a new position.
+  int go_to = -1;
+  while (go_to == -1) {
+    Serial.println("In goto loop");
+    //If value is within a certain tolerance of the reading required to actuate to that voltage then it will adjust go_to to that position
+    if (abs(flexVal - p0) <= tolerance) {
+      go_to = 0;
+      break;
+    }
+    if (abs(flexVal - p1) <= tolerance) {
+      go_to = 1;
+      break;
+    }
+    if (abs(flexVal - p2) <= tolerance) {
+      go_to = 2;
+      break;
+    }
+    if (abs(flexVal - p3) <= tolerance) {
+      go_to = 3;
+      break;
+    }
+    if (abs(flexVal - p4) <= tolerance) {
+      go_to = 4;
+      break;
+    }
+    Serial.println("No position found");
+    break;
+  }
+  Serial.print("Going to: ");
+  Serial.println(go_to);
+  
+  //Find change in position to determine how long motor needs to be run for
+  int pos_change = go_to - curr_position_0;
+  Serial.print("CUrrent position: ");
+  Serial.println(curr_position_0);
+  Serial.print("pos_change ");
+  Serial.println(pos_change);
+  //Negative position change
+  if (pos_change < 0) {
+    //Update time at which Negative Motor began running
+    tn0 = curr;
+    //Calculate interval. 500 times position change because each position is at a 500 ms interval
+    //i.e. if position change of 2, it would take 1000 ms to reach new position
+    interval0 = abs(pos_change * 500);
+    //Record current state of motor and start
+    sn0 = HIGH;
+    digitalWrite(MotorNeg_0, HIGH);
+    curr_position_0 = go_to;
+  }
+  if (pos_change > 0) {
+    Serial.println("Positive change");
+    //Same as above but if change is positive
+    tp0 = curr;
+    interval0 = pos_change * 500;
+    sp0 = HIGH;
+    digitalWrite(MotorPos_0, HIGH);
+    Serial.println("Moving");
+    curr_position_0 = go_to;
+  }
+  Serial.println();
+}
+
+//Same as above but for motor 1
+void ControlMotor1() {
+  //If there are motors currently running and they need to be stopped, stop them and end the method.
+  if (sn1 == HIGH) {
+    if (curr - tn1 >= interval1) {
+      sn1 = LOW;
+      digitalWrite(MotorNeg_1, LOW);
+      return;
+    } else {
+      //If a motor is running exit method
+      return;
+    }
+  }
+  if (sp1 == HIGH) {
+    if (curr - tp1 >= interval1) {
+      sp1 = LOW;
+      digitalWrite(MotorPos_1, LOW);
+      return;
+    } else {
+      //If a motor is running exit method
+      return;
+    }
+  }
+  //Difference in current analog read to calibrated value
+  int flexVal = analogRead(FLEX_PIN_1) - cal_1;
   //Find which position to go to. Start by initializing variable to -1 to check whether a position has been found, break the loop once there's a new position.
   int go_to = -1;
   while (go_to == -1) {
@@ -161,98 +263,65 @@ void ControlMotor0() {
       go_to = 4;
       break;
     }
+    Serial.println("No position found");
+    break;
   }
+  Serial.print("Going to: ");
+  Serial.println(go_to);
+  
   //Find change in position to determine how long motor needs to be run for
-  int pos_change = go_to - curr_position_0;
+  int pos_change = go_to - curr_position_1;
   //Negative position change
   if (pos_change < 0) {
     //Update time at which Negative Motor began running
-    tn0 = curr;
+    tn1 = curr;
     //Calculate interval. 500 times position change because each position is at a 500 ms interval
     //i.e. if position change of 2, it would take 1000 ms to reach new position
-    interval0 = abs(pos_change * 500);
-    //Record current state of motor and start
-    sn0 = HIGH;
-    digitalWrite(MotorNeg_0, HIGH);
-  }
-  if (pos_change > 0) {
-    //Same as above but if change is positive
-    tp0 = curr;
-    interval0 = pos_change * 500;
-    sp0 = HIGH;
-    digitalWrite(MotorPos_0, HIGH);
-  }
-}
-
-//Same as above but for motor 1
-void ControlMotor1() {
-  if (sn1 == HIGH && (curr - tn1 >= interval1)) {
-    sn1 = LOW;
-    digitalWrite(MotorNeg_0, LOW);
-    curr_position_1 = curr_position_1 - interval1 / 500;
-    return;
-  }
-  if (sp1 == HIGH && (curr - tp0 >= interval1)) {
-    sn1 = LOW;
-    digitalWrite(MotorPos_1, LOW);
-    curr_position_1 = curr_position_1 + interval1 / 500;
-    return;
-  }
-  int flexVal = analogRead(FLEX_PIN_1) - cal_1;
-  int go_to = -1;
-  while (go_to == -1) {
-    if (abs(flexVal - p0) <= tolerance) {
-      go_to = 0;
-      break;
-    }
-    if (abs(flexVal - p1) <= tolerance) {
-      go_to = 1;
-      break;
-    }
-    if (abs(flexVal - p2) <= tolerance) {
-      go_to = 2;
-      break;
-    }
-    if (abs(flexVal - p3) <= tolerance) {
-      go_to = 3;
-      break;
-    }
-    if (abs(flexVal - p4) <= tolerance) {
-      go_to = 4;
-      break;
-    }
-  }
-  int pos_change = go_to - curr_position_0;
-  if (pos_change < 0) {
-    tn1 = curr;
     interval1 = abs(pos_change * 500);
+    //Record current state of motor and start
     sn1 = HIGH;
     digitalWrite(MotorNeg_1, HIGH);
+    curr_position_1 = go_to;
   }
   if (pos_change > 0) {
+    Serial.println("Positive change");
+    //Same as above but if change is positive
     tp1 = curr;
     interval1 = pos_change * 500;
     sp1 = HIGH;
     digitalWrite(MotorPos_1, HIGH);
+    Serial.println("Moving");
+    curr_position_1 = go_to;
   }
 }
 
 void ControlMotor2() {
-  if (sn2 == HIGH && (curr - tn2 >= interval2)) {
-    sn2 = LOW;
-    digitalWrite(MotorNeg_2, LOW);
-    curr_position_2 = curr_position_2 - interval2 / 500;
-    return;
+    if (sn2 == HIGH) {
+    if (curr - tn2 >= interval2) {
+      sn2 = LOW;
+      digitalWrite(MotorNeg_2, LOW);
+      return;
+    } else {
+      //If a motor is running exit method
+      return;
+    }
   }
-  if (sp2 == HIGH && (curr - tp2 >= interval2)) {
-    sn2 = LOW;
-    digitalWrite(MotorPos_2, LOW);
-    curr_position_2 = curr_position_2 + interval2 / 500;
-    return;
+  if (sp2 == HIGH) {
+    if (curr - tp2 >= interval2) {
+      sp2 = LOW;
+      digitalWrite(MotorPos_2, LOW);
+      return;
+    } else {
+      //If a motor is running exit method
+      return;
+    }
   }
+  //Difference in current analog read to calibrated value
   int flexVal = analogRead(FLEX_PIN_2) - cal_2;
+  //Find which position to go to. Start by initializing variable to -1 to check whether a position has been found, break the loop once there's a new position.
   int go_to = -1;
   while (go_to == -1) {
+    //If value is within a certain tolerance of the reading required to actuate to that voltage then it will adjust go_to to that position
     if (abs(flexVal - p0) <= tolerance) {
       go_to = 0;
       break;
@@ -273,19 +342,29 @@ void ControlMotor2() {
       go_to = 4;
       break;
     }
+    Serial.println("No position found");
+    break;
   }
-  int pos_change = go_to - curr_position_0;
+  //Find change in position to determine how long motor needs to be run for
+  int pos_change = go_to - curr_position_2;
+  //Negative position change
   if (pos_change < 0) {
+    //Update time at which Negative Motor began running
     tn2 = curr;
+    //Calculate interval. 500 times position change because each position is at a 500 ms interval
+    //i.e. if position change of 2, it would take 1000 ms to reach new position
     interval2 = abs(pos_change * 500);
+    //Record current state of motor and start
     sn2 = HIGH;
     digitalWrite(MotorNeg_2, HIGH);
+    curr_position_2 = go_to;
   }
   if (pos_change > 0) {
+    //Same as above but if change is positive
     tp2 = curr;
-    interval0 = pos_change * 500;
+    interval2 = pos_change * 500;
     sp2 = HIGH;
-    digitalWrite(MotorPos_2, HIGH);
+    curr_position_2 = go_to;
   }
 }
 
@@ -342,22 +421,33 @@ void ControlMotor3() {
 }
 
 void ControlMotor4() {
-  if (sn4 == HIGH && (curr - tn4 >= interval4)) {
-    sn4 = LOW;
-    digitalWrite(MotorNeg_4, LOW);
-    curr_position_4 = curr_position_4 - interval4 / 500;
-    return;
+    if (sn4 == HIGH) {
+    if (curr - tn4 >= interval4) {
+      sn4 = LOW;
+      digitalWrite(MotorNeg_4, LOW);
+      return;
+    } else {
+      //If a motor is running exit method
+      return;
+    }
   }
-  if (sp4 == HIGH && (curr - tp4 >= interval4)) {
-  sn4 = LOW;
-  digitalWrite(MotorPos_4, LOW);
-    curr_position_4 = curr_position_4 + interval4 / 500;
-    return;
+  if (sp4 == HIGH) {
+    if (curr - tp4 >= interval1) {
+      sp4 = LOW;
+      digitalWrite(MotorPos_4, LOW);
+      return;
+    } else {
+      //If a motor is running exit method
+      return;
+    }
   }
-  int flexVal = analogRead(FLEX_PIN_0) - cal_0;
+  //Difference in current analog read to calibrated value
+  int flexVal = analogRead(FLEX_PIN_4) - cal_4;
+  //Find which position to go to. Start by initializing variable to -1 to check whether a position has been found, break the loop once there's a new position.
   int go_to = -1;
   while (go_to == -1) {
-  if (abs(flexVal - p0) <= tolerance) {
+    //If value is within a certain tolerance of the reading required to actuate to that voltage then it will adjust go_to to that position
+    if (abs(flexVal - p0) <= tolerance) {
       go_to = 0;
       break;
     }
@@ -377,19 +467,35 @@ void ControlMotor4() {
       go_to = 4;
       break;
     }
+    Serial.println("No position found");
+    break;
   }
+  Serial.print("Going to: ");
+  Serial.println(go_to);
+  
+  //Find change in position to determine how long motor needs to be run for
   int pos_change = go_to - curr_position_4;
+  //Negative position change
   if (pos_change < 0) {
-  tn4 = curr;
-  interval4 = abs(pos_change * 500);
+    //Update time at which Negative Motor began running
+    tn4 = curr;
+    //Calculate interval. 500 times position change because each position is at a 500 ms interval
+    //i.e. if position change of 2, it would take 1000 ms to reach new position
+    interval4 = abs(pos_change * 500);
+    //Record current state of motor and start
     sn4 = HIGH;
     digitalWrite(MotorNeg_4, HIGH);
+    curr_position_4 = go_to;
   }
   if (pos_change > 0) {
-  tp4 = curr;
-  interval4 = pos_change * 500;
-  sp4 = HIGH;
-  digitalWrite(MotorPos_4, HIGH);
+    Serial.println("Positive change");
+    //Same as above but if change is positive
+    tp4 = curr;
+    interval1 = pos_change * 500;
+    sp4 = HIGH;
+    digitalWrite(MotorPos_4, HIGH);
+    Serial.println("Moving");
+    curr_position_4 = go_to;
   }
 }
 
