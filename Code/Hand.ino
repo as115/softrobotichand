@@ -18,7 +18,7 @@ int intervals[] = {0, 0, 0, 0, 0};
 
 
 //Do research to find values for these
-int positions[] = {40, 100, 150, 250, 300};
+int positions[] = {0, 25, 50, 100, 150, 200};
 
 //State Variables
 int curr_pos[] = {0, 0, 0, 0, 0};
@@ -30,17 +30,17 @@ int cal[] = {0, 0, 0, 0, 0};
 //s = state (high or low)
 //p = positive, n = negative
 //Number is which motor
-int tp0 = 0;
-int tn0 = 0;
-int tp1 = 0;
-int tn1 = 0;
-int tp2 = 0;
-int tn2 = 0;
-int tp3 = 0;
-int tn3 = 0;
-int tp4 = 0;
-int tn4 = 0;
-int times[5][2] = {{tp0, tn0}, {tp1, tn1}, {tp2, tn2}, {tp3, tn3}, {tp4, tn4}};
+long tp0 = 0;
+long tn0 = 0;
+long tp1 = 0;
+long tn1 = 0;
+long tp2 = 0;
+long tn2 = 0;
+long tp3 = 0;
+long tn3 = 0;
+long tp4 = 0;
+long tn4 = 0;
+long times[5][2] = {{tp0, tn0}, {tp1, tn1}, {tp2, tn2}, {tp3, tn3}, {tp4, tn4}};
 
 byte sp0 = LOW;
 byte sn0 = LOW;
@@ -54,7 +54,7 @@ byte sp4 = LOW;
 byte sn4 = LOW;
 int states[5][2] = {{sp0, sn0}, {sp1, sn1}, {sp2, sn2}, {sp3, sn3}, {sp4, sn4}};
 
-int curr = 0; //Current millis value
+long curr = 0; //Current millis value
 
 void setup() {
   Serial.begin(9600);
@@ -68,21 +68,29 @@ void setup() {
   //Calibrate and print cal variables in serial monitor
   Calibrate();
   for (int i = 0; i < 5; i++) {
-    Serial.print("cal[");
-    Serial.print(i);
-    Serial.print("]: ");
-    Serial.println(cal[i]);
+    String s1 = "cal[";
+    String s2 = "]: ";
+    String s =  s1 + i +  s2 + cal[i];
+    Serial.println(s);
   }
 }
 
 void loop() {
-  //  delay(200);
+//    delay(500);
   curr = millis();
+  if (intervals[0] > 3100) {
+    Serial.println("interval error");
+    exit(0);
+  }
   //uncomment next line to make sure all motors are working properly
-  //        TestMotors();
-  //  ShowCalibratedVals();
-  //      ShowVals();
+//          TestMotors();
+    ShowCalibratedVals();
+//        ShowVals();
   Control(0);
+//exit(0);
+//   Control(1);
+//   Control(2);
+//    Control(3);
   //    RunMotors();
 }
 
@@ -114,40 +122,38 @@ void Control(int idx) {
   }
   //Difference in current analog read to calibrated value
   int flexVal = analogRead(FlexPins[idx]) - cal[idx];
-  //Find which position to go to. Start by initializing variable to -1 to check whether a position has been found, break the loop once there's a new position.
   int go_to = FindClosest(flexVal);
-  Serial.print("Going to: ");
-  Serial.println(go_to);
+//  Serial.print("Going to: ");
+//  Serial.println(go_to);
 
   //Find change in position to determine how long motor needs to be run for
   int pos_change = go_to - curr_pos[idx];
-  Serial.print("CUrrent position: ");
-  Serial.println(curr_pos[idx]);
-  Serial.print("pos_change ");
-  Serial.println(pos_change);
+//  Serial.print("Current position: ");
+//  Serial.println(curr_pos[idx]);
+//  Serial.print("pos_change ");
+//  Serial.println(pos_change);
   //Negative position change
   if (pos_change < 0) {
     //Update time at which Negative Motor began running
     times[idx][1] = curr;
     //Calculate interval. 500 times position change because each position is at a 500 ms interval
     //i.e. if position change of 2, it would take 1000 ms to reach new position
-    intervals[idx] = abs(pos_change * 500) + 200;
+    intervals[idx] = abs(pos_change * 550);
     //Record current state of motor and start
     states[idx][1] = HIGH;
     digitalWrite(MotorPins[idx][1], HIGH);
     curr_pos[idx] = go_to;
   }
   if (pos_change > 0) {
-    Serial.println("Positive change");
+//    Serial.println("Positive change");
     //Same as above but if change is positive
     times[idx][0] = curr;
-    intervals[idx] = (pos_change * 500) + 200;
-    times[idx][0] = HIGH;
+    intervals[idx] = (pos_change * 500);
+    states[idx][0] = HIGH;
     digitalWrite(MotorPins[idx][0], HIGH);
-    Serial.println("Moving");
     curr_pos[idx] = go_to;
   }
-  Serial.println();
+//  Serial.println();
 }
 
 void RunMotors() {
@@ -155,8 +161,8 @@ void RunMotors() {
     Control(i);
   }
 }
+
 //take average value of input over 2 seconds
-//Update 2/28/2023: originally it calibrated each motor at once for one second, but changed it so it calibrates them all at the same time for 2 seconds
 int Calibrate() {
   double avg0 = 0;
   double avg1 = 0;
@@ -245,7 +251,7 @@ void TestMotors() {
 
 int FindClosest(int flexVal) {
   int pos[] = {0, 0, 0, 0, 0};
-  for (int i = 0; i < 5; i++) {
+  for (int i = 0; i < 6; i++) {
     pos[i] = abs(flexVal - positions[i]);
   }
   int small = pos[0];
@@ -258,17 +264,14 @@ int FindClosest(int flexVal) {
   }
   return idx_small;
 }
+
 //Prints values - calibration to see change in voltage from base val
 void ShowCalibratedVals() {
-  Serial.print("0: ");
-  Serial.println(analogRead(FlexPins[0]) - cal[0]);
-  Serial.print("1: ");
-  Serial.println(analogRead(FlexPins[1]) - cal[1]);
-  Serial.print("2: ");
-  Serial.println(analogRead(FlexPins[2]) - cal[2]);
-  Serial.print("3: ");
-  Serial.println(analogRead(FlexPins[3]) - cal[3]);
-  Serial.print("4: ");
-  Serial.println(analogRead(FlexPins[4]) - cal[4]);
+  for (int i = 0; i < 5; i++) {
+    int temp = analogRead(FlexPins[i]) - cal[i];
+    String s1 = ": ";
+    String s = i + s1 + temp;
+    Serial.println(s);
+  }
   Serial.println();
 }
